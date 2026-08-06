@@ -1,0 +1,14 @@
+.git
+.metadata
+.idea
+.vscode
+**/target
+**/bin
+**/obj
+node_modules
+tmp
+backups
+playwright-report
+test-results
+.env
+.env.local

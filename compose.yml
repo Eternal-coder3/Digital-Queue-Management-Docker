@@ -1,0 +1,110 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - smartqueue-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - smartqueue-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  notification:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      AllowedOrigins: ${SMARTQUEUE_ALLOWED_ORIGINS}
+      TwilioSettings__EnableMockMode: ${TWILIOSETTINGS__ENABLEMOCKMODE}
+      TwilioSettings__FromEmail: ${TWILIOSETTINGS__FROMEMAIL}
+      TwilioSettings__FromName: ${TWILIOSETTINGS__FROMNAME}
+      TwilioSettings__ApiKey: ${TWILIOSETTINGS__APIKEY:-}
+      TwilioSettings__SmtpHost: ${TWILIOSETTINGS__SMTPHOST:-}
+      TwilioSettings__SmtpPort: ${TWILIOSETTINGS__SMTPPORT:-587}
+      TwilioSettings__SmtpUsername: ${TWILIOSETTINGS__SMTPUSERNAME:-}
+      TwilioSettings__SmtpPassword: ${TWILIOSETTINGS__SMTPPASSWORD:-}
+      TwilioSettings__EnableSsl: ${TWILIOSETTINGS__ENABLESSL:-true}
+    ports:
+      - "127.0.0.1:5050:5050"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:5050/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE}
+      NOTIFICATION_SERVICE_URL: http://notification:5050
+      MANAGEMENT_PORT: 9091
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      notification:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:9091/actuator/health/readiness"]
+      interval: 10s
+      timeout: 4s
+      retries: 18
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["observability"]
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - smartqueue-prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    profiles: ["observability"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-smartqueue-grafana-local}
+    volumes:
+      - smartqueue-grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+volumes:
+  smartqueue-postgres-data:
+  smartqueue-redis-data:
+  smartqueue-prometheus-data:
+  smartqueue-grafana-data:

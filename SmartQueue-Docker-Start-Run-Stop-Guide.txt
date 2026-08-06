@@ -1,0 +1,146 @@
+SMARTQUEUE — START, RUN, AND STOP GUIDE
+=======================================
+
+Use the Docker version. It keeps PostgreSQL, Redis, Java, and .NET isolated from the rest of your PC.
+
+
+START THE PROJECT
+-----------------
+
+1. Open Docker Desktop.
+
+2. Wait until Docker Desktop says the engine is running.
+
+3. Open PowerShell.
+
+4. Move into the project:
+
+   cd "D:\Smart Queue"
+
+5. Start everything:
+
+   .\scripts\start-docker.ps1
+
+   The first start may take several minutes. Later starts will be faster.
+
+6. Check every component:
+
+   docker compose --env-file .env.local -p smartqueue -f compose.yml ps
+
+   You should see these four services as healthy:
+
+   - smartqueue-backend-1
+   - smartqueue-notification-1
+   - smartqueue-postgres-1
+   - smartqueue-redis-1
+
+7. Open the application:
+
+   http://localhost:8080
+
+   Notification API:
+
+   http://localhost:5050/swagger
+
+
+SIGN IN
+-------
+
+Admin:
+
+   Email: admin@smartqueue.local
+   Password: Admin@SmartQueue2026!
+
+Officer:
+
+   Email: officer@smartqueue.local
+   Password: Officer@SmartQueue2026!
+
+
+VIEW LOGS
+---------
+
+All logs:
+
+   docker compose --env-file .env.local -p smartqueue -f compose.yml logs -f
+
+Backend logs only:
+
+   docker compose --env-file .env.local -p smartqueue -f compose.yml logs -f backend
+
+Press Ctrl+C to exit the log display. This does not stop the project.
+
+
+STOP THE PROJECT COMPLETELY
+---------------------------
+
+From D:\Smart Queue, run:
+
+   .\scripts\stop-docker.ps1
+
+This stops the application while preserving database data.
+
+Confirm everything stopped:
+
+   docker compose --env-file .env.local -p smartqueue -f compose.yml ps
+
+The output should have no running SmartQueue containers.
+
+You may then exit Docker Desktop from its system-tray icon if you do not need Docker for anything else.
+
+
+START IT AGAIN LATER
+--------------------
+
+   cd "D:\Smart Queue"
+   .\scripts\start-docker.ps1
+
+Your existing database and accounts will remain available.
+
+
+REBUILD AFTER CHANGING CODE
+---------------------------
+
+If you edit Java, .NET, frontend, Docker, or configuration files:
+
+   cd "D:\Smart Queue"
+   docker compose --env-file .env.local -p smartqueue -f compose.yml up -d --build
+
+Check status afterward:
+
+   docker compose --env-file .env.local -p smartqueue -f compose.yml ps
+
+
+CREATE A DATABASE BACKUP
+------------------------
+
+While the project is running:
+
+   .\scripts\backup-database.ps1
+
+Backups are saved under:
+
+   D:\Smart Queue\backups
+
+
+REMOVE THE PROJECT'S DOCKER ENVIRONMENT
+---------------------------------------
+
+Only use this when you intentionally want to remove the SmartQueue containers and network:
+
+   .\scripts\remove-docker.ps1
+
+Read the script's warning carefully. Removing Docker volumes also removes the Docker PostgreSQL database.
+
+
+DAILY COMMANDS
+--------------
+
+Start:
+
+   cd "D:\Smart Queue"
+   .\scripts\start-docker.ps1
+
+Stop:
+
+   .\scripts\stop-docker.ps1

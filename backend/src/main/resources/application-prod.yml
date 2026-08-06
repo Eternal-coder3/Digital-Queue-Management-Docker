@@ -1,0 +1,31 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      connect-timeout: 2s
+      timeout: 2s
+
+logging:
+  level:
+    root: WARN
+    com.smartqueue: INFO
+  structured:
+    format:
+      console: ecs
+
+smartqueue:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+      expiration: ${JWT_EXPIRATION:15m}
+      qr-expiration: ${QR_EXPIRATION:5m}
+      refresh-expiration: ${REFRESH_EXPIRATION:7d}
+      refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:true}
