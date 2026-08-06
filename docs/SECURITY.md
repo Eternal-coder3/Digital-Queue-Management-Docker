@@ -1,14 +1,18 @@
-# Security notes
+# Security policy
 
-## Exposed email credential
+## Reporting a vulnerability
 
-An email application password existed in commit `7b0b405`. Its removal from `appsettings.json` prevents new deployments from using it but does not remove it from existing clones or Git history.
+Please do not open a public issue for security vulnerabilities. Contact the repository owner privately.
 
-Required owner actions:
+## Secrets and configuration
 
-1. Revoke the old application password at the email provider immediately.
-2. Review provider sign-in and sending activity.
-3. Rotate any related credentials that reused the same secret.
-4. If the repository was shared, coordinate a `git filter-repo` history rewrite with every collaborator and remote owner. Do not rewrite shared history without that coordination.
+- Real credentials must never be committed.
+- Copy `.env.example` to `.env.local` for local development.
+- `.env.local` is excluded from Git.
+- Production secrets should use a managed secret store.
+- Revoke and rotate credentials immediately if accidentally exposed.
+- Enable secret scanning and dependency alerts on GitHub.
 
-New secrets belong in `.env.local` for isolated local development and in a managed secret store for production. Secret scanning should be enabled in the repository host and CI pipeline.
+## Supported version
+
+Security updates currently apply to the latest version on the `main` branch.
